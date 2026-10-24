@@ -1,0 +1,60 @@
+
+intent_keywords:
+  modern: ["modern", "tech", "clean", "contemporary", "minimal"]
+  traditional: ["traditional", "classic", "vintage", "heritage", "history"]
+
+campaign_keywords:
+  - "sale"
+  - "discount"
+  - "offer"
+  - "promo"
+  - "promotion"
+  - "christmas"
+  - "new year"
+  - "seasonal"
+  - "holiday"
+  - "black friday"
+  - "cyber monday"
+  - "easter"
+
+platforms:
+  instagram:
+    keywords: ["instagram", "insta", "ig", "instergram", "instergrame", "instargram", "instgram"]
+    canvas:
+      width: 1080
+      height: 1080
+    base_font_sizes:
+      high_impact:
+        base_en: 20
+        base_si: 22
+      dense_info:
+        base_en: 16
+        base_si: 18
+      standard:
+        base_en: 18
+        base_si: 20
+  facebook:
+    keywords: ["facebook", "fb"]
+    canvas:
+      width: 1200
+      height: 630
+    base_font_sizes:
+      high_impact:
+        base_en: 18
+        base_si: 20
+      dense_info:
+        base_en: 15
+        base_si: 17
+      standard:
+        base_en: 16
+        base_si: 18
+
+modular_scales:
+  high_impact:
+    keywords: ["quote", "sale", "offer", "poster", "shout", "loud", "discount", "promo"]
+    ratio: 1.618
+  dense_info:
+    keywords: ["menu", "infographic", "list", "details", "schedule", "informative"]
+    ratio: 1.250
+  standard:
+    ratio: 1.333
