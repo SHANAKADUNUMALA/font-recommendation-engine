@@ -63,7 +63,11 @@ def load_ai_models():
     weights_path = os.path.join(artifacts_dir, "siamese_font_matcher.pth")
     
     if os.path.exists(weights_path):
-        checkpoint = torch.load(weights_path, map_location=device)
+        try:
+            checkpoint = torch.load(weights_path, map_location=device, weights_only=False)
+        except TypeError:
+            checkpoint = torch.load(weights_path, map_location=device)
+            
         if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
             siamese_model.load_state_dict(checkpoint['model_state_dict'])
         else:
@@ -74,4 +78,6 @@ def load_ai_models():
     else:
         print(f"CRITICAL ERROR: Could not find weights at {weights_path}")
         
+    import gc
+    gc.collect()
     return siamese_model, sbert_model

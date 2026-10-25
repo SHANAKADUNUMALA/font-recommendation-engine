@@ -49,3 +49,4 @@ yarn-error.log*
 .cache/
 huggingface/
 .huggingface/
+backend/artifacts/sbert_model/

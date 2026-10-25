@@ -40,6 +40,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "Typographic AI Engine Backend",
+        "version": "1.0.0",
+        "health": "/health",
+        "docs": "/docs"
+    }
+
 @app.get("/health", response_model=HealthResponse)
 @app.get("/api/health", response_model=HealthResponse)
 def health_check():
