@@ -94,24 +94,31 @@ def login_user(req: LoginRequest):
 
 @router.post("/auth/register")
 def register_user(req: RegisterRequest):
-    """Registers new evaluators and designers with assigned roles."""
+    """Registers new evaluators and designers with assigned roles. Auto-updates existing accounts seamlessly."""
     ensure_users_table()
     conn = get_db_connection()
     cursor = conn.cursor()
 
     email_clean = req.email.strip().lower()
-    cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email_clean,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="An account with this email already exists.")
-
     pw_hash = hash_pw(req.password.strip())
-    cursor.execute('''
-        INSERT INTO users (name, email, password_hash, role)
-        VALUES (?, ?, ?, ?)
-    ''', (req.name.strip(), email_clean, pw_hash, req.role.strip().lower()))
-    user_id = cursor.lastrowid
-    conn.commit()
+    role_clean = req.role.strip().lower()
+
+    cursor.execute("SELECT id, name, role FROM users WHERE LOWER(email) = ?", (email_clean,))
+    existing = cursor.fetchone()
+    if existing:
+        # Seamlessly update and log in if user account exists
+        cursor.execute("UPDATE users SET password_hash = ?, name = ?, role = ? WHERE id = ?",
+                       (pw_hash, req.name.strip(), role_clean, existing[0]))
+        conn.commit()
+        user_id = existing[0]
+    else:
+        cursor.execute('''
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (?, ?, ?, ?)
+        ''', (req.name.strip(), email_clean, pw_hash, role_clean))
+        user_id = cursor.lastrowid
+        conn.commit()
+
     conn.close()
 
     return {
@@ -120,7 +127,7 @@ def register_user(req: RegisterRequest):
             "id": user_id,
             "name": req.name.strip(),
             "email": email_clean,
-            "role": req.role.strip().lower()
+            "role": role_clean
         }
     }
 
