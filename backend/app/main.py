@@ -41,14 +41,17 @@ app.add_middleware(
 )
 
 @app.get("/health", response_model=HealthResponse)
+@app.get("/api/health", response_model=HealthResponse)
 def health_check():
     return {"status": "Server is running successfully, and AI Models are loaded!"}
 
 @app.post("/analyze")
+@app.post("/api/analyze")
 def analyze_user_prompt(request: PromptRequest):
     return analyze_intent(request.prompt)
 
 @app.get("/fonts/count", response_model=FontCountResponse)
+@app.get("/api/fonts/count", response_model=FontCountResponse)
 def count_fonts():
     """Tests the database connection by counting loaded fonts."""
     eng_fonts = fetch_fonts_by_script("ENGLISH")
@@ -60,16 +63,19 @@ def count_fonts():
     }
 
 @app.post("/recommend")
+@app.post("/api/recommend")
 def get_font_recommendations(request: PromptRequest):
     """The master endpoint that generates the top 3 bilingual palettes."""
     return generate_palettes(request.prompt)
 
 @app.post("/language-strategy")
+@app.post("/api/language-strategy")
 def get_language_strategy(request: LanguageRequest):
     """Secondary endpoint to determine language hierarchy based on user preference and design context."""
     return analyze_language_strategy(request.follow_up_prompt, request.selected_palette, request.design_context)
 
 @app.post("/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 def handle_general_chat(request: PromptRequest):
     """Gatekeeper endpoint for out-of-scope, educational, or typography questions with conversational memory."""
     answer = get_fallback_response(request.prompt, request.context, request.history)
