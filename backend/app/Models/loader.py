@@ -3,6 +3,9 @@ import torch
 import torch.nn as nn
 from sentence_transformers import SentenceTransformer
 
+# Limit PyTorch internal threads to 1 to reduce memory footprint on 512MB RAM cloud containers
+torch.set_num_threads(1)
+
 # 1. Exact Dual-Stream Siamese Architecture
 class DualStreamSiameseNet(nn.Module):
     def __init__(self, visual_dim=512, semantic_dim=384, hidden_dim=256, output_dim=128):

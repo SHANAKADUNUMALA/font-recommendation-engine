@@ -15,10 +15,13 @@ from app.api.V1.endpoints.auth import router as auth_router
 from app.schemas.request import PromptRequest, LanguageRequest, FontAnalyzeRequest, FontIngestRequest
 from app.schemas.response import HealthResponse, FontCountResponse, ChatResponse
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("--- Server Starting Up ---")
-    load_ai_models()
+    # Launch model loading asynchronously so Uvicorn binds immediately to $PORT
+    asyncio.create_task(asyncio.to_thread(load_ai_models))
     yield
     print("--- Server Shutting Down ---")
 
