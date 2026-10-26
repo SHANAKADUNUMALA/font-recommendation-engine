@@ -48,20 +48,25 @@ def load_ai_models():
 
     print("Loading AI Models into memory...")
     
-    # 2. Load the SBERT router (offline-first to prevent startup hanging)
-    try:
-        sbert_model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
-    except Exception:
-        sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    artifacts_dir = os.path.abspath(os.path.join(current_dir, "../../artifacts"))
+    local_sbert_dir = os.path.join(artifacts_dir, "sbert_model")
+    
+    # 2. Load the SBERT router (prioritize local pre-bundled weights for zero-network startup)
+    if os.path.isdir(local_sbert_dir):
+        print(f"Loading SBERT from local artifacts: {local_sbert_dir}")
+        sbert_model = SentenceTransformer(local_sbert_dir)
+    else:
+        try:
+            sbert_model = SentenceTransformer('all-MiniLM-L6-v2', local_files_only=True)
+        except Exception:
+            sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
     
     # 3. Load trained PyTorch Siamese weights
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     siamese_model = DualStreamSiameseNet().to(device)
     
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    artifacts_dir = os.path.abspath(os.path.join(current_dir, "../../artifacts"))
     weights_path = os.path.join(artifacts_dir, "siamese_font_matcher.pth")
-    
     if os.path.exists(weights_path):
         try:
             checkpoint = torch.load(weights_path, map_location=device, weights_only=False)
