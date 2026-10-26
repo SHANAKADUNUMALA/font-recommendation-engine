@@ -25,14 +25,14 @@ platforms:
       height: 1080
     base_font_sizes:
       high_impact:
-        base_en: 20
-        base_si: 22
+        base_en: 24
+        base_si: 26
       dense_info:
-        base_en: 16
-        base_si: 18
-      standard:
         base_en: 18
         base_si: 20
+      standard:
+        base_en: 22
+        base_si: 24
   facebook:
     keywords: ["facebook", "fb"]
     canvas:
@@ -40,21 +40,21 @@ platforms:
       height: 630
     base_font_sizes:
       high_impact:
+        base_en: 24
+        base_si: 26
+      dense_info:
         base_en: 18
         base_si: 20
-      dense_info:
-        base_en: 15
-        base_si: 17
       standard:
-        base_en: 16
-        base_si: 18
+        base_en: 22
+        base_si: 24
 
 modular_scales:
   high_impact:
-    keywords: ["quote", "sale", "offer", "poster", "shout", "loud", "discount", "promo"]
+    keywords: ["quote", "sale", "offer", "poster", "shout", "loud", "discount", "promo", "promotion", "festive", "festival", "celebration", "new year", "christmas", "holiday"]
     ratio: 1.618
   dense_info:
-    keywords: ["menu", "infographic", "list", "details", "schedule", "informative"]
+    keywords: ["menu", "infographic", "list", "details", "schedule", "informative", "catalog"]
     ratio: 1.250
   standard:
     ratio: 1.333
