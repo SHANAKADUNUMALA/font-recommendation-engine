@@ -407,6 +407,11 @@ export default function App() {
     }
   }, [sessions, currentUser])
 
+  // Pre-warm backend on page load to eliminate Render free-tier cold-start delays
+  useEffect(() => {
+    axios.get('/api/health').catch(() => {})
+  }, [])
+
   const prevMessagesLengthRef = useRef(activeSession?.messages?.length || 0)
   const prevSessionIdRef = useRef(activeSession?.id)
 
@@ -445,11 +450,30 @@ export default function App() {
     })
   }
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return
+  const postWithRetry = async (url, data, retries = 1, delay = 2500) => {
+    try {
+      return await axios.post(url, data)
+    } catch (err) {
+      if (retries > 0) {
+        console.warn(`[Cold-Start Recovery] POST ${url} failed, retrying in ${delay}ms...`, err)
+        await new Promise(r => setTimeout(r, delay))
+        return await axios.post(url, data)
+      }
+      throw err
+    }
+  }
 
-    const userText = input.trim()
-    const lowerInput = userText.toLowerCase()
+  const handleSend = () => {
+    if (!input.trim() || loading) return
+    const text = input.trim()
+    setInput("")
+    executePrompt(text)
+  }
+
+  const executePrompt = async (userText) => {
+    if (!userText || !userText.trim()) return
+
+    const lowerInput = userText.toLowerCase().trim()
     const userMsg = { id: Date.now(), sender: 'user', type: 'text', text: userText }
 
     setSessions(prev => prev.map(s => {
@@ -467,7 +491,6 @@ export default function App() {
       return s
     }))
 
-    setInput("")
     setLoading(true)
 
     try {
@@ -559,7 +582,7 @@ export default function App() {
 
         // Case A: A matching or active design was found in session memory
         if (targetPalette) {
-          const response = await axios.post('/api/language-strategy', {
+          const response = await postWithRetry('/api/language-strategy', {
             follow_up_prompt: userText,
             selected_palette: targetPalette,
             design_context: targetPalette.userPrompt || ""
@@ -592,7 +615,7 @@ export default function App() {
             fallbackTopic = "modern corporate poster"
           }
           const generatedTopic = topicTokens.length > 0 ? `${topicTokens.join(' ')} poster` : fallbackTopic
-          const recResponse = await axios.post('/api/recommend', { prompt: generatedTopic })
+          const recResponse = await postWithRetry('/api/recommend', { prompt: generatedTopic })
           const messageId = Date.now() + 1
           const platformSpec = recResponse.data.platform_spec || { platform: 'facebook', canvas_width: 1200, canvas_height: 630 }
           const backendSlots = recResponse.data.content_slots || null
@@ -606,7 +629,7 @@ export default function App() {
             contentSlots: backendSlots
           }
 
-          const stratResponse = await axios.post('/api/language-strategy', {
+          const stratResponse = await postWithRetry('/api/language-strategy', {
             follow_up_prompt: userText,
             selected_palette: enrichedPalette,
             design_context: generatedTopic
@@ -665,7 +688,7 @@ export default function App() {
           active_palette: currentPalette,
           active_strategy: currentPalette?.activeStrategy
         }
-        const response = await axios.post('/api/chat', { 
+        const response = await postWithRetry('/api/chat', { 
           prompt: userText,
           context: chatContext,
           history: activeSession.messages 
@@ -682,7 +705,7 @@ export default function App() {
       }
       // 4. Generative Font Recommendation route (Siamese Network + Modular Scale + Layout)
       else if (isGenerativeIntent || isAskingForNew || (!activeSession.latestPalette && !isQuestion)) {
-        const response = await axios.post('/api/recommend', { prompt: userText })
+        const response = await postWithRetry('/api/recommend', { prompt: userText })
         const messageId = Date.now() + 1
         const platformSpec = response.data.platform_spec || { platform: 'facebook', canvas_width: 1200, canvas_height: 630 }
         
@@ -719,7 +742,7 @@ export default function App() {
           active_palette: activeSession.latestPalette,
           active_strategy: activeSession.latestPalette?.activeStrategy
         }
-        const response = await axios.post('/api/chat', { 
+        const response = await postWithRetry('/api/chat', { 
           prompt: userText,
           context: chatContext,
           history: activeSession.messages 
@@ -736,13 +759,19 @@ export default function App() {
       }
     } catch (error) {
       console.error("API Gateway error:", error)
+      const isColdStart = error.code === 'ECONNABORTED' || !error.response || error.response?.status === 504 || error.response?.status === 502
+      const friendlyText = isColdStart
+        ? "The cloud server was waking up from standby (free-tier cold start). It is now online! Click below to generate your design."
+        : "I was unable to complete that request. Please try again in a moment."
+
       setSessions(prev => prev.map(s => s.id === activeSession.id ? {
         ...s,
         messages: [...s.messages, {
           id: Date.now() + 1,
           sender: 'ai',
           type: 'text',
-          text: "I was unable to complete that request. Please verify the backend servers are running."
+          text: friendlyText,
+          retryPrompt: userText
         }]
       } : s))
     }
@@ -1199,6 +1228,30 @@ export default function App() {
                     fontWeight: 400
                   }}>
                     {msg.text}
+                    {msg.retryPrompt && (
+                      <div style={{ marginTop: '12px' }}>
+                        <button
+                          onClick={() => executePrompt(msg.retryPrompt)}
+                          disabled={loading}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#2563eb',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: loading ? 'wait' : 'pointer',
+                            fontSize: '13.5px',
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 4px rgba(37,99,235,0.25)'
+                          }}
+                        >
+                          🔄 Retry Design Generation
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
